@@ -1,0 +1,7 @@
+backups/
+.local/
+*.bak
+*.log
+.env
+.env.*
+!.env.example

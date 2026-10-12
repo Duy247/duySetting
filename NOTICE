@@ -1,0 +1,5 @@
+duySetting includes a Neovim configuration derived from LazyVim/starter.
+The original Apache License 2.0 is preserved in config/nvim/LICENSE.
+LazyVim: https://github.com/LazyVim/LazyVim
+Starter: https://github.com/LazyVim/starter
+Plugins, fonts and applications are installed separately and retain their respective licenses.

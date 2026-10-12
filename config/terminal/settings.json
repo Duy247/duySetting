@@ -1,0 +1,45 @@
+{
+  "defaultProfile": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+  "profiles": {
+    "defaults": {
+      "font": {
+        "size": 12,
+        "face": "0xProto Nerd Font Mono"
+      }
+    },
+    "list": [
+      {
+        "startingDirectory": "%USERPROFILE%",
+        "hidden": false,
+        "name": "PowerShell (Dev)",
+        "commandline": "pwsh.exe -NoLogo",
+        "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}"
+      },
+      {
+        "startingDirectory": "%USERPROFILE%",
+        "hidden": false,
+        "name": "Windows PowerShell",
+        "commandline": "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoLogo",
+        "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}"
+      },
+      {
+        "startingDirectory": "%USERPROFILE%",
+        "hidden": false,
+        "name": "Command Prompt",
+        "commandline": "%SystemRoot%\\System32\\cmd.exe",
+        "guid": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}"
+      }
+    ]
+  },
+  "keybindings": [
+    {
+      "keys": "ctrl+v",
+      "id": "unbound"
+    },
+    {
+      "keys": "ctrl+shift+v",
+      "id": "Terminal.PasteFromClipboard"
+    }
+  ],
+  "launchMode": "maximized"
+}

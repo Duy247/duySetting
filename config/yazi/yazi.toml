@@ -1,0 +1,16 @@
+[mgr]
+show_hidden = true
+sort_by = "natural"
+sort_dir_first = true
+
+[opener]
+edit = [
+  { run = 'nvim %s', block = true, for = "windows", desc = "Neovim (LazyVim)" },
+]
+
+[open]
+prepend_rules = [
+  { url = "*.{md,markdown,txt,js,jsx,mjs,cjs,ts,tsx,java,py,pyi,c,cpp,cc,cxx,h,hpp,rs,go,json,jsonc,toml,yaml,yml,lua,vim,ps1,psm1,psd1,sh,bash,zsh,css,scss,html,xml,cmake,sql,ini,cfg,conf,env,gitignore,properties,gradle,kt,kts}", use = ["edit", "open", "reveal"] },
+  { url = "{LICENSE,README,Makefile,Dockerfile,CMakeLists.txt,.gitignore,.gitattributes,.env,.editorconfig}", use = ["edit", "open", "reveal"] },
+  { mime = "text/*", use = ["edit", "open", "reveal"] },
+]

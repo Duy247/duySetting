@@ -1,0 +1,9 @@
+[[mgr.prepend_keymap]]
+on = "e"
+run = "open"
+desc = "Edit with Neovim (or select in Neovim's Yazi)"
+
+[[mgr.prepend_keymap]]
+on = [ "g", "x" ]
+run = "shell 'start \"\" %s1' --orphan"
+desc = "Open with Windows default application"
