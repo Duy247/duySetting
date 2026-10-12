@@ -144,6 +144,16 @@ installer is tested against an isolated directory, including repeated installs
 and preservation of existing Terminal settings. Debugging and Java test adapters
 still need project-level validation.
 
+Run the installer regression checks with:
+
+```powershell
+pwsh -NoProfile -File .\tests\Install.Tests.ps1
+```
+
+An optional GitHub Actions template is in `docs/validate-workflow.yml`.
+Copy it to `.github/workflows/validate.yml` to enable automated checks.
+Publishing that path with GitHub CLI requires workflow authorization.
+
 ## Credits and license
 
 Based on [LazyVim](https://github.com/LazyVim/LazyVim) and its starter, with
