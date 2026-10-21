@@ -1,0 +1,9 @@
+[Libinput][1739][52839][SYNA800E:00 06CB:CE67 Touchpad]
+DisableWhileTyping=true
+NaturalScroll=true
+PointerAcceleration=0.1
+ScrollFactor=1
+ScrollMethod=1
+TapAndDrag=true
+TapDragLock=false
+TapToClick=true
