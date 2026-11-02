@@ -25,3 +25,16 @@ The script backs up each destination before replacing it. Log back in afterward.
 Pinch zoom depends on application support; no custom gesture service is installed. The battery's existing 75–80% charging thresholds are firmware settings and are not restored by copying these files. Set them through KDE Power Management if needed.
 
 Only desktop configuration is included here. Font binaries and wallpaper are supplied separately; the complete local archive also contains those assets. No GitHub login credentials, SSH keys, browser profiles, or LTE connection secrets are included.
+
+## Additional tools and input method
+
+The October 25 additions—eyecare, Vietnamese Telex, Grok Build, Antigravity,
+OpenCode v2, and Zed with local ACP commands—are documented in
+[tools/README.md](tools/README.md). Their restore is separate from the desktop
+snapshot and includes portable paths and configuration backups.
+
+## XP desktop and work mode
+
+The XP-style desktop, `work on` / `work off` switch, matching lock wallpaper,
+startup animations, portable installer, and saved work reference settings are in
+[xp-work/README.md](xp-work/README.md).

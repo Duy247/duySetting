@@ -1,0 +1,56 @@
+{
+  "telemetry": {
+    "diagnostics": false,
+    "metrics": false,
+    "anthropic_retention": false
+  },
+  "session": {
+    "trust_all_worktrees": true
+  },
+  "vim_mode": true,
+  "base_keymap": "VSCode",
+  "agent_servers": {
+    "opencode-v2": {
+      "default_config_options": {
+        "model": "opencode/glm-5.3-flash-free"
+      },
+      "type": "custom",
+      "command": "__HOME__/.local/bin/opencode",
+      "args": [
+        "acp"
+      ]
+    },
+    "antigravity-acp": {
+      "type": "custom",
+      "command": "__HOME__/.local/share/agy-acp/agy_acp_server.par",
+      "args": [
+        "--uid="
+      ]
+    },
+    "grok-build": {
+      "type": "custom",
+      "command": "__HOME__/.local/bin/grok",
+      "args": [
+        "agent",
+        "stdio"
+      ]
+    },
+    "codex-acp": {
+      "type": "custom",
+      "command": "/usr/bin/node",
+      "args": [
+        "__HOME__/.local/share/duySetting/codex-acp/node_modules/@agentclientprotocol/codex-acp/dist/index.js"
+      ],
+      "env": {
+        "CODEX_PATH": "__HOME__/.local/bin/codex"
+      }
+    }
+  },
+  "ui_font_size": 16,
+  "buffer_font_size": 15,
+  "theme": {
+    "mode": "system",
+    "light": "Ayu Light",
+    "dark": "Ayu Dark"
+  }
+}

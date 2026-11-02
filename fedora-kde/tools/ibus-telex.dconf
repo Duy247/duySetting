@@ -1,0 +1,6 @@
+[general]
+engines-order=['xkb:us::eng', 'tb:vi:telex']
+preload-engines=['xkb:us::eng', 'tb:vi:telex']
+
+[general/hotkey]
+triggers=['<Control>space']

@@ -161,3 +161,12 @@ Based on [LazyVim](https://github.com/LazyVim/LazyVim) and its starter, with
 [yazi.nvim](https://github.com/mikavilpas/yazi.nvim).
 Repository configuration is provided under Apache-2.0; see LICENSE and NOTICE.
 External applications, fonts and plugins retain their own licenses.
+
+## Fedora KDE
+
+The Linux desktop snapshot is in [fedora-kde](fedora-kde/README.md).
+Additional setup for eyecare, Vietnamese Telex, Grok Build, Antigravity,
+OpenCode v2, and Zed is in [fedora-kde/tools](fedora-kde/tools/README.md).
+
+The XP desktop / KDE work-mode switch and startup animations are in
+[fedora-kde/xp-work](fedora-kde/xp-work/README.md).

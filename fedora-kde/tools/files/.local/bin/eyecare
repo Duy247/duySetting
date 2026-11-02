@@ -1,0 +1,95 @@
+#!/usr/bin/python3
+"""Adjust KDE brightness and Night Light, preserving prior settings."""
+import argparse
+import fcntl
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+
+def run(*args):
+    return subprocess.run(args, check=True, text=True, capture_output=True).stdout.strip()
+
+
+def bus(service, path, interface, method, *args):
+    return run('busctl', '--user', 'call', service, path, interface, method, *args)
+
+
+def brightness(method, *args):
+    return bus('org.kde.Solid.PowerManagement',
+               '/org/kde/Solid/PowerManagement/Actions/BrightnessControl',
+               'org.kde.Solid.PowerManagement.Actions.BrightnessControl', method, *args)
+
+
+def read_setting(key):
+    value = run('kreadconfig6', '--file', 'kwinrc', '--group', 'NightColor',
+                '--key', key, '--default', '__EYECARE_UNSET__')
+    return None if value == '__EYECARE_UNSET__' else value
+
+
+def write_setting(key, value):
+    args = ['kwriteconfig6', '--file', 'kwinrc', '--group', 'NightColor', '--notify', '--key', key]
+    run(*(args + (['--delete'] if value is None else [str(value)])))
+
+
+def reload_kwin():
+    bus('org.kde.KWin', '/KWin', 'org.kde.KWin', 'reconfigure')
+
+
+def restore(saved):
+    for key, value in saved['settings'].items():
+        write_setting(key, value)
+    reload_kwin()
+    brightness('setBrightness', 'i', str(saved['brightness']))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('mode', choices=['on', 'off', 'status'])
+    parser.add_argument('--brightness', type=int, default=30, metavar='PERCENT')
+    parser.add_argument('--temperature', type=int, default=3200, metavar='KELVIN')
+    args = parser.parse_args()
+    if not 5 <= args.brightness <= 100 or not 1000 <= args.temperature <= 6500:
+        parser.error('brightness must be 5–100; temperature must be 1000–6500')
+    directory = Path(os.environ.get('XDG_STATE_HOME', str(Path.home() / '.local/state'))) / 'eyecare'
+    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with (directory / 'lock').open('w') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state = directory / 'previous.json'
+        if args.mode == 'status':
+            current = int(brightness('brightness').split()[1])
+            maximum = int(brightness('brightnessMax').split()[1])
+            temp = run('busctl', '--user', 'get-property', 'org.kde.KWin',
+                       '/org/kde/KWin/NightLight', 'org.kde.KWin.NightLight', 'currentTemperature')
+            print(f"Eyecare: {'on' if state.exists() else 'off'}; brightness: {round(current / maximum * 100)}%; temperature: {temp.split()[1]} K")
+        elif args.mode == 'off':
+            if state.exists():
+                restore(json.loads(state.read_text()))
+                state.unlink()
+                print('Eyecare off: restored previous brightness and Night Light settings.')
+            else:
+                print('Eyecare is already off.')
+        else:
+            maximum = int(brightness('brightnessMax').split()[1])
+            if not state.exists():
+                saved = {'brightness': int(brightness('brightness').split()[1]),
+                         'settings': {key: read_setting(key) for key in ('Active', 'Mode', 'NightTemperature')}}
+                temporary = state.with_suffix('.tmp')
+                temporary.write_text(json.dumps(saved))
+                temporary.replace(state)
+            for key, value in {'Active': 'true', 'Mode': '0', 'NightTemperature': args.temperature}.items():
+                write_setting(key, value)
+            reload_kwin()
+            brightness('setBrightness', 'i', str(max(1, round(maximum * args.brightness / 100))))
+            print(f'Eyecare on: {args.brightness}% brightness, {args.temperature} K.')
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (subprocess.CalledProcessError, OSError, ValueError, KeyError) as error:
+        print(f'eyecare: {getattr(error, "stderr", None) or error}', file=sys.stderr)
+        print('If settings were partially applied, run eyecare off to restore them.', file=sys.stderr)
+        sys.exit(1)

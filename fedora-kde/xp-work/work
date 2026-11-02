@@ -1,0 +1,122 @@
+#!/usr/bin/python3
+"""Switch the current Plasma session between saved work appearance and XP Luna."""
+import configparser, fcntl, json, os, pathlib, shutil, subprocess, sys, time
+H=pathlib.Path.home(); R=H/'.local/share/xp-work'; C=H/'.config'
+lock=open(R/'lock','w'); fcntl.flock(lock,fcntl.LOCK_EX)
+def run(*a): return subprocess.check_output(a,text=True,stderr=subprocess.STDOUT).strip()
+def js(s): return run('qdbus-qt6','org.kde.plasmashell','/PlasmaShell','org.kde.PlasmaShell.evaluateScript',s)
+def read(p):
+ c=configparser.RawConfigParser(strict=False,interpolation=None); c.optionxform=str
+ if p.exists(): c.read(p)
+ return c
+def write(p,c):
+ tmp=p.with_suffix('.xp-work.tmp')
+ with tmp.open('w') as f:c.write(f,space_around_delimiters=False)
+ tmp.replace(p)
+def selected(file,group,values):
+ c=read(C/file)
+ if c.has_section(group):c.remove_section(group)
+ if values:
+  c.add_section(group)
+  for k,v in values.items():c.set(group,k,v)
+ write(C/file,c)
+def get(file,group):
+ c=read(file);return dict(c.items(group)) if c.has_section(group) else {}
+def refresh_icons():
+ # Qt's platform theme also watches KConfig notifications. Raw file writes and
+ # the KIconLoader signal alone do not invalidate its cached system theme.
+ theme=get(C/'kdeglobals','Icons').get('Theme','breeze')
+ run('kwriteconfig6','--file','kdeglobals','--group','Icons','--key','Theme','--notify','--delete')
+ run('kwriteconfig6','--file','kdeglobals','--group','Icons','--key','Theme','--notify',theme)
+ for group in range(6):
+  subprocess.run(['dbus-send','--session','--type=signal','/KIconLoader',
+                  'org.kde.KIconLoader.iconChanged','int32:'+str(group)],check=True)
+def capture_lock_appearance():
+ c=read(C/'kscreenlockerrc')
+ return {'plugin':c.get('Greeter','WallpaperPlugin',fallback=None),
+         'wallpaper':{g:dict(c.items(g)) for g in c.sections() if g.startswith('Greeter][Wallpaper]')}}
+def apply_lock_appearance(mode):
+ # Change wallpaper appearance only; leave the Daemon/security settings intact.
+ if mode=='off':
+  profile={'plugin':'org.kde.image','wallpaper':{
+   'Greeter][Wallpaper][org.kde.image][General':{
+    'Image':(H/'.local/share/plasma/desktoptheme/Luna/wallpapers/Bliss/contents/images/3840x2160.jpg').as_uri(),
+    'FillMode':'2'}}}
+ else:
+  saved=R/'work/lock-appearance.json'
+  if not saved.exists():saved=R/'original/lock-appearance.json'
+  profile=json.loads(saved.read_text())
+ c=read(C/'kscreenlockerrc')
+ for group in list(c.sections()):
+  if group.startswith('Greeter][Wallpaper]'):c.remove_section(group)
+ if not c.has_section('Greeter'):c.add_section('Greeter')
+ c.remove_option('Greeter','WallpaperPlugin')
+ if profile['plugin'] is not None:c.set('Greeter','WallpaperPlugin',profile['plugin'])
+ for group,values in profile['wallpaper'].items():
+  c.add_section(group)
+  for key,value in values.items():c.set(group,key,value)
+ write(C/'kscreenlockerrc',c)
+ # Ask the existing locker service to reload, without locking the session.
+ run('qdbus-qt6','org.freedesktop.ScreenSaver','/ScreenSaver','org.kde.screensaver.configure')
+def snapshot():
+ d=R/'work';d.mkdir(exist_ok=True)
+ (d/'lock-appearance.json').write_text(json.dumps(capture_lock_appearance(),indent=2)+'\n')
+ for n in ['kdeglobals','plasmarc','kwinrc']:shutil.copy2(C/n,d/n)
+ data=js('print(JSON.stringify({desktops:desktops().map(d=>{d.currentConfigGroup=["Wallpaper",d.wallpaperPlugin,"General"];return {id:d.id,plugin:d.wallpaperPlugin,image:d.readConfig("Image","")}}),panels:panels().map(p=>({id:p.id,location:p.location,height:p.height,floating:p.floating,hiding:p.hiding,lengthMode:p.lengthMode,alignment:p.alignment,widgets:p.widgets().filter(w=>w.type==="org.kde.plasma.kickoff").map(w=>{w.currentConfigGroup=["General"];return {id:w.id,icon:w.readConfig("icon","start-here-kde"),menuLabel:w.readConfig("menuLabel","")}})}))}));')
+ (d/'layout.json').write_text(data)
+ shutil.copy2(d/'kdeglobals',H/'.local/share/color-schemes/XPWorkOriginal.colors')
+mode=sys.argv[1] if len(sys.argv)>1 else 'status'
+if mode not in ['on','off','status','--startup']:
+ sys.exit('Usage: work on | work off | work status')
+current=(R/'mode').read_text().strip()
+if mode=='status':print('Work mode '+current+(' — saved KDE desktop' if current=='on' else ' — Windows XP Luna'));sys.exit()
+if mode=='--startup':mode='off'
+if mode==current:
+ apply_lock_appearance(mode)
+ refresh_icons()
+ print('Work mode already '+mode+' — appearance refreshed.');sys.exit()
+try:
+ # Verify a live Plasma session before changing anything.
+ js('print("ready")')
+ if mode=='off':snapshot()
+ saved=R/'work' if (R/'work/layout.json').exists() else R/'original'
+ if mode=='off':
+  run('plasma-apply-colorscheme','Luna');run('plasma-apply-desktoptheme','Luna')
+  selected('kdeglobals','Icons',{'Theme':'Luna'})
+  selected('kwinrc','org.kde.kdecoration2',{'library':'org.kde.kwin.aurorae','theme':'__aurorae__svg__Luna'})
+  wallpaper=(H/'.local/share/plasma/desktoptheme/Luna/wallpapers/Bliss/contents/images/3840x2160.jpg').as_uri()
+  js('const startIcon='+json.dumps(str(R/'start.svg'))+';for(const d of desktops()){d.wallpaperPlugin="org.kde.image";d.currentConfigGroup=["Wallpaper","org.kde.image","General"];d.writeConfig("Image",'+json.dumps(wallpaper)+');}for(const p of panels()){p.location="bottom";p.height=40;p.floating=false;p.hiding="none";p.lengthMode="fill";for(const w of p.widgets()){if(w.type==="org.kde.plasma.kickoff"){w.currentConfigGroup=["General"];w.writeConfig("icon",startIcon);w.writeConfig("menuLabel","");}}}')
+ else:
+  run('plasma-apply-colorscheme','XPWorkOriginal')
+  run('plasma-apply-desktoptheme',get(saved/'plasmarc','Theme').get('name','breeze-dark'))
+  # Restore exact saved palette (including custom accent), icons and decoration only.
+  original=read(saved/'kdeglobals');now=read(C/'kdeglobals')
+  for group in set(now.sections())|set(original.sections()):
+   if group.startswith('Colors:') or group.startswith('ColorEffects:') or group in ['Icons','WM']:
+    if now.has_section(group):now.remove_section(group)
+    if original.has_section(group):
+     now.add_section(group)
+     for k,v in original.items(group):now.set(group,k,v)
+  for key in ['ColorScheme','ColorSchemeHash','AccentColor']:
+   now.remove_option('General',key)
+   if original.has_option('General',key):now.set('General',key,original.get('General',key))
+  write(C/'kdeglobals',now)
+  selected('kwinrc','org.kde.kdecoration2',get(saved/'kwinrc','org.kde.kdecoration2'))
+  data=json.loads((saved/'layout.json').read_text())
+  js('const saved='+json.dumps(data)+';for(const s of saved.desktops){const d=desktopById(s.id);if(d){d.wallpaperPlugin=s.plugin;d.currentConfigGroup=["Wallpaper",s.plugin,"General"];d.writeConfig("Image",s.image);}}for(const s of saved.panels){const p=panelById(s.id);if(p){for(const key of ["location","height","floating","hiding","lengthMode","alignment"]){if(s[key]!==undefined)p[key]=s[key];}for(const w of s.widgets){const a=p.widgetById(w.id);if(a){a.currentConfigGroup=["General"];a.writeConfig("icon",w.icon);a.writeConfig("menuLabel",w.menuLabel||"");}}}}')
+ run('qdbus-qt6','org.kde.KWin','/KWin','org.kde.KWin.reconfigure')
+ for event in [0,2,3,4]:
+  subprocess.run(['dbus-send','--session','--type=signal','/KGlobalSettings','org.kde.KGlobalSettings.notifyChange','int32:'+str(event),'int32:0'],check=True)
+ apply_lock_appearance(mode)
+ refresh_icons()
+ (R/'mode').write_text(mode)
+ # Recreate the panel's cached QML/task/tray icons after the theme changes.
+ run('systemctl','--user','restart','plasma-plasmashell.service')
+ for attempt in range(100):
+  try:
+   if int(js('print(panels().length)'))>0:break
+  except (subprocess.CalledProcessError,ValueError):pass
+  time.sleep(0.1)
+ print('Work mode '+mode+(' — your KDE desktop restored.' if mode=='on' else ' — Windows XP Luna desktop.'))
+except subprocess.CalledProcessError as e:
+ print(e.output,file=sys.stderr);sys.exit(1)

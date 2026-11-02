@@ -1,0 +1,1 @@
+{"desktops":[{"id":1,"plugin":"org.kde.image","image":"file:///usr/share/wallpapers/DarkestHour/contents/images/2560x1600.jpg"},{"id":24,"plugin":"org.kde.image","image":""}],"panels":[{"id":2,"location":"bottom","height":46,"floating":true,"hiding":"none","lengthMode":"fill","alignment":"center","widgets":[{"id":3,"icon":"account-google","menuLabel":""}]}]}

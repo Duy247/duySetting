@@ -5,3 +5,10 @@ backups/
 .env
 .env.*
 !.env.example
+
+# Version the eyecare source in the Fedora restore template.
+!fedora-kde/tools/files/.local/
+fedora-kde/tools/files/.local/*
+!fedora-kde/tools/files/.local/bin/
+fedora-kde/tools/files/.local/bin/*
+!fedora-kde/tools/files/.local/bin/eyecare
